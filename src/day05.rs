@@ -55,7 +55,7 @@ pub fn main(file_name: String) -> std::io::Result<()> {
 
                 for x in x_min..(x_max + 1){
                     for y in y_min..(y_max + 1){
-                        if on_line(&l1, x as f64, y as f64) && on_line(&l2, x as f64, y as f64){
+                        if on_line(&l1, x as f64, y as f64){
                             points.insert([x as i32, y as i32]);
                             println!("{} {}", x, y);
                         }
@@ -68,7 +68,7 @@ pub fn main(file_name: String) -> std::io::Result<()> {
                 let x = ((l1.b * l2.c) - (l2.b * l1.c)) as f64 / denominator;
                 let y = ((l1.c * l2.a) - (l2.c * l1.a)) as f64 / denominator;
 
-                if !(on_line(&l1, x, y) && on_line(&l2, x, y)){
+                if !(on_line(&l1, x, y) && on_line(&l2, x, y) && x.fract() == 0.0 && y.fract() == 0.0){
                     continue;
                 }
 
