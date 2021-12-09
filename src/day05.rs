@@ -1,14 +1,17 @@
 use std::fs::File;
 use std::io::{BufReader, BufRead};
 use std::collections::HashSet;
+use std::cmp;
 
 
 struct Line {
-    x1: i32,
-    x2: i32,
-    y1: i32,
-    y2: i32, 
-    m: f64
+    a: i64,
+    b: i64,
+    c: i64,
+    x_min: i32,
+    x_max: i32,
+    y_min: i32,
+    y_max: i32
 }
 
 
@@ -25,83 +28,53 @@ pub fn main(file_name: String) -> std::io::Result<()> {
             let l1 = &lines[i];
             let l2 = &lines[j];
 
-            if l1.m != l2.m {
-                // Get Overlapping Point 
-                let mut p = [l2.x1, l1.y1];
-                
-                if l1.m == 90.0 {
-                    p = [l1.x1, l2.y1];
+            if (l1.a * l2.b) == (l2.a * l1.b) {
+                // Parallel Lines Need To Do Something Diffirent
+
+                // Check if these lines are eqivlient 
+                // use fact that (u.v)*u == (u.u)*v (if u = scalar * v)
+                let l1_dot_l2 = l1.a * l2.a + l1.b * l2.b + l1.c * l2.c;
+                let l1_dot_l1 = l1.a.pow(2) + l1.b.pow(2) + l1.c.pow(2);
+
+                let a1 = l1.a * l1_dot_l2;
+                let a2 = l2.a * l1_dot_l1;
+                let b1 = l1.b * l1_dot_l2;
+                let b2 = l2.b * l1_dot_l1;
+                let c1 = l1.c * l1_dot_l2;
+                let c2 = l2.c * l1_dot_l1;
+
+                if a1 != a2 || b1 != b2 || c1 != c2 {
+                    continue;
                 }
 
-                if p[0] >= l1.x1 && p[0] >= l2.x1 && p[0] <= l1.x2 && p[0] <= l2.x2 && 
-                   p[1] >= l1.y1 && p[1] >= l2.y1 && p[1] <= l1.y2 && p[1] <= l2.y2 {
-                    points.insert(p);    
+                // Get the intersect of the domains of l1 and l2 
+                let x_min = cmp::max(l1.x_min, l2.x_min);
+                let x_max = cmp::min(l1.x_max, l2.x_max);
+                let y_min = cmp::max(l1.y_min, l2.y_min);
+                let y_max = cmp::min(l1.y_max, l2.y_max);
+
+                for x in x_min..(x_max + 1){
+                    for y in y_min..(y_max + 1){
+                        if on_line(&l1, x as f64, y as f64) && on_line(&l2, x as f64, y as f64){
+                            points.insert([x as i32, y as i32]);
+                            println!("{} {}", x, y);
+                        }
+                    }
                 }
-            } else if l1.m == 90.0 && l1.x1 == l2.x1 {
-                // Get Overlapping vertical Points 
-                let y_size = 
-                    ((l1.y2 > l2.y2) as i32 * l2.y2 + (l1.y2 <= l2.y2) as i32 * l1.y2) - 
-                    ((l1.y1 > l2.y1) as i32 * l1.y1 + (l1.y1 <= l2.y1) as i32 * l2.y1) + 1;
+            } else {
+                // Not Parallel Calc point of intersection 
+                let denominator = ((l1.a * l2.b) - (l2.a * l1.b)) as f64;
 
-                printline(&l1);
-                printline(&l2);
-                
-                for y_inc in 0..y_size {
-                    let y = (l1.y1 > l2.y1) as i32 * l1.y1 + (l1.y1 <= l2.y1) as i32 * l2.y1 + y_inc;
+                let x = ((l1.b * l2.c) - (l2.b * l1.c)) as f64 / denominator;
+                let y = ((l1.c * l2.a) - (l2.c * l1.a)) as f64 / denominator;
 
-                    println!("{} {}", l1.x1, y);
-
-                    points.insert([l1.x1, y]);
+                if !(on_line(&l1, x, y) && on_line(&l2, x, y)){
+                    continue;
                 }
 
-            } else if l1.m == 0.0 && l1.y1 == l2.y1{
-                // Get Overlapping horizontal Points 
-                let x_size = 
-                    ((l1.x2 > l2.x2) as i32 * l2.x2 + (l1.x2 <= l2.x2) as i32 * l1.x2) - 
-                    ((l1.x1 > l2.x1) as i32 * l1.x1 + (l1.x1 <= l2.x1) as i32 * l2.x1) + 1;
-
-                printline(&l1);
-                printline(&l2);
-
-            
-                for x_inc in 0..x_size {
-                    let x = (l1.x1 > l2.x1) as i32 * l1.x1 + (l1.x1 <= l2.x1) as i32 * l2.x1 + x_inc;
-
-                    println!("{} {}", x, l1.y1);
-
-                    points.insert([x, l1.y1]);
-                }
+                points.insert([x as i32, y as i32]);
+                println!("{} {}", x, y);
             }
-
-            
-            /* // Todo: change this miread question. 
-            let overlap_h = 
-                ((l1.m == l2.m && l1.m == 90.0 && l1.x1 == l2.x1) as i32) * ( 1 +
-                    ((l1.y2 > l2.y2) as i32 * l2.y2 + (l1.y2 <= l2.y2) as i32 * l1.y2) - 
-                    ((l1.y1 > l2.y1) as i32 * l1.y1 + (l1.y1 <= l2.y1) as i32 * l2.y1)
-                );
-            
-            let overlap_v = 
-                ((l1.m == l2.m && l1.m == 0.0 && l1.y1 == l2.y1) as i32) * ( 1 + 
-                    ((l1.x2 > l2.x2) as i32 * l2.x2 + (l1.x2 <= l2.x2) as i32 * l1.x2) - 
-                    ((l1.x1 > l2.x1) as i32 * l1.x1 + (l1.x1 <= l2.x1) as i32 * l2.x1)
-                );
-
-            let overlap_cross = 
-                (l1.m != l2.m && (
-                    (l1.m == 90.0 && // L1: x=a, L2: y=b
-                        l1.x1 >= l2.x1 && l1.x1 <= l2.x2 && 
-                        l2.y1 >= l1.y1 && l2.y1 <= l1.y2) ||  
-                    (l1.m == 0.0 &&  // L1: y=a, L2: x=b
-                        l1.y1 >= l2.y1 && l1.y1 <= l2.y2 && 
-                        l2.x1 >= l1.x1 && l2.x1 <= l1.x2)   
-                )) as i32;
-
-            
-            overlapping += 
-                ((overlap_v > 0) as i32) * (overlap_v) + 
-                ((overlap_h > 0) as i32) * (overlap_h) + 
-                overlap_cross;  */
         }
     }
 
@@ -113,8 +86,17 @@ pub fn main(file_name: String) -> std::io::Result<()> {
 }
 
 
-fn printline(l: &Line) {
-    println!("{},{} -> {},{} : {}", l.x1, l.y1, l.x2, l.y2, l.m);
+fn print_line(l: &Line){
+    println!(
+        "{}x + {}y + {}c = 0; x:[{}, {}], y:[{} {}]",
+        l.a, l.b, l.c, l.x_min, l.x_max, l.y_min, l.y_max);
+}
+
+
+fn on_line(l: &Line, x: f64, y: f64) -> bool{
+    ((x * (l.a as f64) + y * (l.b as f64) + l.c as f64) == 0.0) && 
+    x >= (l.x_min as f64) && x <= (l.x_max as f64) && 
+    y >= (l.y_min as f64) && y <= (l.y_max as f64)
 }
 
 
@@ -130,37 +112,39 @@ fn read_lines(file_name: &String) -> std::io::Result<Vec<Line>> {
         // Get the two points 
         let points = line.unwrap();
         let points: Vec<&str> = points.split(" -> ").collect();
+
         let p1 = parse_point(&points[0]);
         let p2 = parse_point(&points[1]);
 
-        // Order points 
-        let (p1, p2) = match (p1[0].pow(2) + p1[1].pow(2)) > (p2[0].pow(2) + p2[1].pow(2)) {
-            true => (p2, p1),
-            false => (p1, p2)
+
+        // Use these points to calculate the equation of line 
+        let a = p1[1] - p2[1];
+        let b = p2[0] - p1[0];
+        let c = (p1[0] * p2[1]) - (p2[0] * p1[1]);
+
+        let x_min = (p1[0] < p2[0]) as i32 * p1[0] + (p1[0] >= p2[0]) as i32 * p2[0];
+        let x_max = (p1[0] < p2[0]) as i32 * p2[0] + (p1[0] >= p2[0]) as i32 * p1[0];
+        let y_min = (p1[1] < p2[1]) as i32 * p1[1] + (p1[1] >= p2[1]) as i32 * p2[1];
+        let y_max = (p1[1] < p2[1]) as i32 * p2[1] + (p1[1] >= p2[1]) as i32 * p1[1];
+
+
+        // Create line 
+        let line = Line {
+            a: a as i64,
+            b: b as i64,
+            c: c as i64,
+            x_min: x_min,
+            x_max: x_max,
+            y_min: y_min,
+            y_max: y_max
         };
 
 
-        // Calculate the gradient 
-        let deltax = p2[0] - p1[0];
-        let deltay = p2[1] - p1[1];
+        print!("{}, {} -> {}, {} => ", p1[0], p1[1], p2[0], p2[1]);
+        print_line(&line);
+        println!();
 
-        let m = match deltax {
-            0 => 90.0,
-            _ => ((deltay / deltax) as f64).atan()
-        };
-
-        //println!("{},{} -> {},{} : {}", p1[0], p1[1], p2[0], p2[1], m);
-
-        // Check if hor or vertical 
-        if m == 0.0 || m == 90.0 {
-            lines.push(Line {
-                x1: p1[0],
-                x2: p2[0],
-                y1: p1[1],
-                y2: p2[1], 
-                m: m
-            });
-        }
+        lines.push(line);
     }
 
 
