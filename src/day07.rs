@@ -6,17 +6,37 @@ pub fn main(file_name: String) -> std::io::Result<()> {
     // Get Crabs 
     let mut crabs = get_crab_pos(&file_name)?;
     let median = median(&mut crabs);
+    let mean = mean(&crabs);
+    let var: i32 = mean as i32;
 
-    println!("{} {}", median, crabs.len());
+    println!("Median: {} Mean:{} Len:{}", median, mean, crabs.len());
 
     // Calc result 
     let mut result = 0;
+    let mut result_val = 0;
 
-    for element in crabs {
-        result += (median as i32 - element as i32).abs() as u32;
+    for i in (var - 5)..(var + 5) {
+        if i < 0 || i > crabs.len() as i32 {
+            continue;
+        }
+
+        let mut tmp = 0;
+
+        for element in &crabs {
+            let moves = (i - *element as i32).abs() as u32;
+
+            tmp += (moves * (moves + 1)) / 2;
+        }
+
+        println!("{}, {}", i , tmp);
+
+        if tmp < result || result == 0 {
+            result = tmp;
+            result_val = i;
+        }
     }
 
-    println!("{}", result);
+    println!("Best Fuel: {} Best Pos: {}", result, result_val);
 
 
     // Finished 
@@ -34,6 +54,13 @@ fn median(crabs: &mut Vec<u32>) -> u32{
     } else {
         crabs[mid]
     }
+}
+
+
+fn mean(crabs: &Vec<u32>) -> u32 {
+    let total: u32 = crabs.iter().sum();
+
+    (total as f32 / (crabs.len() as f32)).round() as u32    
 }
 
 
