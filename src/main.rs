@@ -1,10 +1,10 @@
-mod day07;
+mod day08;
 
 
 fn main() {
-    let file_name = String::from("inputs/07.txt");
+    let file_name = String::from("inputs/08.txt");
 
-    match day07::main(file_name) {
+    match day08::main(file_name) {
         Ok(()) => println!("Finished!"),
         Err(error) => panic!("Failed to complete problem: {:?}", error),
     }
