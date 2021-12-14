@@ -13,10 +13,12 @@ const ADJ: [[i32; 2]; 4] = [[0, 1], [0, -1], [1, 0], [-1, 0]];
 
 pub fn main(file_name: String) -> std::io::Result<()> {
     // Read file 
-    let hm = read_heightmap(file_name)?;
+    let mut hm = read_heightmap(file_name)?;
 
     // Find low points 
-    let mut result = 0;
+    let mut l1 = 0;
+    let mut l2 = 0;
+    let mut l3 = 0;
 
     for x in 0..hm.width {
         'outer: for y  in 0..hm.height {
@@ -37,15 +39,25 @@ pub fn main(file_name: String) -> std::io::Result<()> {
             //result += hm.store[y as usize][x as usize] + 1;
 
             // Find the size of this basin 
-            let basin_size = get_basin_size(&hm, x as u32, y as u32);
+            let bs = get_basin_size(&mut hm, x as u32, y as u32);
 
-            println!("{} : {}", hm.store[y as usize][x as usize], basin_size);
+            println!("{} : {}", hm.store[y as usize][x as usize], bs);
 
-            result = result * basin_size;
+            if bs > l1 {
+                l3 = l2;
+                l2 = l1;
+                l1 = bs;
+            } else if bs > l2 {
+                l3 = l2;
+                l2 = bs;
+            } else if bs > l3 {
+                l3 = bs;
+            }
         }
     }
 
-    println!("{}", result);
+    println!("{} {} {}", l1, l2, l3);
+    println!("{}", l1 * l2 * l3);
     
 
     // Finished 
@@ -53,8 +65,42 @@ pub fn main(file_name: String) -> std::io::Result<()> {
 }
 
 
-fn get_basin_size(hm: &Heightmap, x: u32, y: u32) -> u32 {
-    0
+fn get_basin_size(hm: &mut Heightmap, x: u32, y: u32) -> u32 {
+    // Calc size 
+    let out = get_basin_recursive(hm, -1, x as i32, y as i32);
+
+    // Unnegate basin sizes 
+    for x in 0..hm.width {
+        for y in 0..hm.height {
+            hm.store[y as usize][x as usize] = hm.store[y as usize][x as usize].abs();
+        }
+    }
+
+    out
+}
+
+fn get_basin_recursive(hm: &mut Heightmap, previous_val:i32, x: i32, y: i32) -> u32 {
+    // Check x,y Within bounds 
+    if x < 0 || x >= hm.width as i32 || y < 0 || y >= hm.height as i32 {
+        return 0;
+    }
+
+    // Get New Val 
+    let val = hm.store[y as usize][x as usize];
+
+    if val == 9 || val < 0 || val <= previous_val {
+        return 0;
+    }
+
+    // Valid val recursively find size of basin 
+    let mut size = 1;
+    hm.store[y as usize][x as usize] = -val;
+
+    for offset in ADJ {
+        size += get_basin_recursive(hm, val, x + offset[0], y + offset[1]);
+    }
+
+    size
 }
 
 
