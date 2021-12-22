@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::{BufReader, BufRead};
+use std::collections::HashSet;
 
 
 struct Point {
@@ -19,6 +20,72 @@ pub fn main(file_name: String) -> std::io::Result<()> {
     // Read file contents 
     let mut content = get_contents(file_name)?;
 
+    // Perform y_folds 
+    for y_fold in &content.y_folds {
+        for i in 0..content.points.len() {
+            if content.points[i].y > *y_fold {
+                content.points[i].y = *y_fold - (content.points[i].y - *y_fold); 
+            }
+        }
+    }
+
+
+    // Perform x_folds 
+    
+    for x_fold in &content.x_folds {
+        for i in 0..content.points.len() {
+            if content.points[i].x > *x_fold {
+                content.points[i].x = *x_fold - (content.points[i].x - *x_fold); 
+            }
+        }
+    }
+
+
+    // Count number of unique points 
+    /*
+    let mut points = HashSet::new();
+
+
+    for p in content.points {
+        let x = p.x;
+        let y = p.y;
+
+        points.insert((x + y) * (x + y + 1) + y);
+    }
+
+    println!("{}", points.len());*/
+
+
+    // Print the points 
+    let mut max_x = 0;
+    let mut max_y = 0;
+
+    // Get min and max value 
+    for p in &content.points {
+        if p.x > max_x {
+            max_x = p.x;
+        }
+
+        if p.y > max_y {
+            max_y = p.y;
+        }
+    }
+
+    println!("{} {}", max_x, max_y);
+
+    // Print points 
+    for y in 0..(max_y + 1) {
+        'outer: for x in 0..(max_x + 1) {
+            for p in &content.points {
+                if p.x == x && p.y == y {
+                    print!("#");
+                    continue 'outer;
+                }
+            } 
+            print!(".");
+        }
+        println!();
+    }
 
 
     // Finished 
